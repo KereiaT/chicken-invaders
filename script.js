@@ -15,140 +15,159 @@ class Player {
             left: false,
             right: false,
             up: false,
-            down: false
+            down: false,
+            space: false
         };
 
-        const image = new Image();
-        image.src = './assets/images/blue.png';
-        image.onload = () => {
+        const playerImage = new Image();
+        playerImage.src = './assets/images/blue.png';
+        playerImage.onload = () => {
             const scale = 0.5;
-            this.image = image;
-            this.width = image.width * scale;
-            this.height = image.height * scale;
+            this.image = playerImage;
+            this.width = playerImage.width * scale;
+            this.height = playerImage.height * scale;
             this.position = {
                 x: canvas.width / 2 - this.width / 2,
                 y: canvas.height - this.height - 20
             };
         };
+
+        const projectileImage = new Image();
+        projectileImage.src = './assets/images/b1.png';
+        this.projectileImage = projectileImage;
+
+        this.projectiles = [];
     }
 
     draw() {
         if (this.image) {
             c.drawImage(this.image, this.position.x, this.position.y, this.width, this.height);
         }
+
+        this.projectiles.forEach((projectile) => {
+            c.drawImage(this.projectileImage, projectile.x, projectile.y, projectile.width, projectile.height);
+        });
     }
 
     update() {
-        if(this.image) {
-         this.draw()
-         this.position.x += this.velocity.x
-         this.position.y += this.velocity.y
-         if (this.position.x < 0) {
-            this.position.x = 0;
+        if (this.image) {
+            this.draw();
+            this.position.x += this.velocity.x;
+            this.position.y += this.velocity.y;
+
+            if (this.position.x < 0) {
+                this.position.x = 0;
             }
 
-        if (this.position.x + this.width > canvas.width) {
-            this.position.x = canvas.width - this.width;
+            if (this.position.x + this.width > canvas.width) {
+                this.position.x = canvas.width - this.width;
             }
 
-        if (this.position.y < 0) {
-            this.position.y = 0;
+            if (this.position.y < 0) {
+                this.position.y = 0;
             }
 
-        if (this.position.y + this.height > canvas.height) {
-            this.position.y = canvas.height - this.height;
+            if (this.position.y + this.height > canvas.height) {
+                this.position.y = canvas.height - this.height;
             }
+
+            if (this.keys.space) {
+                this.shoot();
+            }
+
+            this.projectiles.forEach((projectile) => {
+                projectile.y -= 5; // Измените скорость выстрела по вашему желанию
+                if (projectile.y < 0) {
+                    // Удалите снаряд, если он вышел за пределы холста
+                    this.projectiles.shift();
+                }
+            });
         }
-     }
+    }
+
+    shoot() {
+        // Создайте новый снаряд и добавьте его в массив снарядов
+        const projectile = {
+            x: this.position.x + this.width / 2 - this.projectileImage.width / 2,
+            y: this.position.y,
+            width: this.projectileImage.width,
+            height: this.projectileImage.height
+        };
+
+        this.projectiles.push(projectile);
+    }
 }
 
 const player = new Player();
 const keys = {
-    a: {
-        pressed: false
-    },
-    d: {
-        pressed: false
-    },
-    w: {
-        pressed: false
-    },
-    s: {
-        pressed: false
-    },
-    space: {
-        pressed: false
-    }
-}
+    left: false,
+    right: false,
+    up: false,
+    down: false,
+    space: false
+};
 
 function animate() {
     requestAnimationFrame(animate);
     c.clearRect(0, 0, canvas.width, canvas.height);
     player.update();
 
-    if (keys.a.pressed) {
-        player.velocity.x = -5
-    } else if (keys.d.pressed) {
-        player.velocity.x = 5
-    } else if (keys.w.pressed) {
-        player.velocity.y = -5
-    } else if (keys.s.pressed) {
-        player.velocity.y = 5
+    if (keys.left) {
+        player.velocity.x = -5;
+    } else if (keys.right) {
+        player.velocity.x = 5;
     } else {
-        player.velocity.x = 0
-        player.velocity.y = 0
+        player.velocity.x = 0;
+    }
+
+    if (keys.up) {
+        player.velocity.y = -5;
+    } else if (keys.down) {
+        player.velocity.y = 5;
+    } else {
+        player.velocity.y = 0;
     }
 }
 
 animate();
 
-addEventListener('keydown', ({ key }) => {
-    switch (key) {
-        case 'a':
-            keys.a.pressed = true;
-            console.log('left');
+addEventListener('keydown', (event) => {
+    switch (event.key) {
+        case 'ArrowLeft':
+            keys.left = true;
             break;
-        case 'd':
-            keys.d.pressed = true;
-            console.log('right');
+        case 'ArrowRight':
+            keys.right = true;
             break;
-        case 'w':
-            keys.w.pressed = true;
-            console.log('up');
+        case 'ArrowUp':
+            keys.up = true;
             break;
-        case 's':
-            keys.s.pressed = true;
-            console.log('down');
+        case 'ArrowDown':
+            keys.down = true;
             break;
         case ' ':
-            keys.space.pressed = true;
-            console.log('space');
+            keys.space = true;
+            player.shoot(); 
             break;
     }
 });
 
-addEventListener('keyup', ({ key }) => {
-    switch (key) {
-        case 'a':
-            keys.a.pressed = false;
-            console.log('left');
+addEventListener('keyup', (event) => {
+    switch (event.key) {
+        case 'ArrowLeft':
+            keys.left = false;
             break;
-        case 'd':
-            keys.d.pressed = false;
-            console.log('right');
+        case 'ArrowRight':
+            keys.right = false;
             break;
-        case 's':
-            keys.s.pressed = false;
-            console.log('down');
+        case 'ArrowDown':
+            keys.down = false;
             break;
-        case 'w':
-            keys.w.pressed = false;
-            console.log('up');
+        case 'ArrowUp':
+            keys.up = false;
             break;
         case ' ':
-            keys.space.pressed = false;
-            console.log('space');
+            keys.space = false;
             break;
     }
 });
-
