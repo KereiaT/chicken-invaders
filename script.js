@@ -20,7 +20,7 @@ class Player {
         };
 
         const playerImage = new Image();
-        playerImage.src = './assets/images/blue.png';
+        playerImage.src = './assets/images/ship.png';
         playerImage.onload = () => {
             const scale = 0.5;
             this.image = playerImage;
@@ -76,9 +76,8 @@ class Player {
             }
 
             this.projectiles.forEach((projectile) => {
-                projectile.y -= 5; // Измените скорость выстрела по вашему желанию
+                projectile.y -= 5;
                 if (projectile.y < 0) {
-                    // Удалите снаряд, если он вышел за пределы холста
                     this.projectiles.shift();
                 }
             });
@@ -86,7 +85,6 @@ class Player {
     }
 
     shoot() {
-        // Создайте новый снаряд и добавьте его в массив снарядов
         const projectile = {
             x: this.position.x + this.width / 2 - this.projectileImage.width / 2,
             y: this.position.y,
@@ -98,6 +96,103 @@ class Player {
     }
 }
 
+class Enemy {
+    constructor(x, y) {
+        this.position = {
+            x: x,
+            y: y
+        };
+
+        this.velocity = {
+            x: 1,
+            y: 0
+        };
+
+        const enemySpriteImage = new Image();
+        enemySpriteImage.src = './assets/images/chickenRed.png';
+        this.enemySpriteImage = enemySpriteImage;
+        this.spriteFrameWidth = 40; // Замените на фактический размер кадра спрайта
+        this.spriteFrameHeight = 45; // Замените на фактический размер кадра спрайта
+        this.currentFrame = 0;
+        this.frameCount = 10; // Общее количество кадров в анимации спрайта
+        this.animationSpeed = 0.2; // Скорость анимации
+        this.animationCounter = 0;
+        this.width = this.spriteFrameWidth; // Добавлено для установки ширины врага
+        this.height = this.spriteFrameHeight;
+
+        const eggImage = new Image();
+        eggImage.src = './assets/images/Egg.webp';
+        this.eggImage = eggImage;
+        this.eggWidth = 30; // Уменьшенный размер яйца
+        this.eggHeight = 30; // Уменьшенный размер яйца
+        this.eggs = [];
+    }
+
+    draw() {
+        if (this.enemySpriteImage) {
+            c.drawImage(
+                this.enemySpriteImage,
+                this.currentFrame * this.spriteFrameWidth,
+                0,
+                this.spriteFrameWidth,
+                this.spriteFrameHeight,
+                this.position.x,
+                this.position.y,
+                this.width,
+                this.height
+            );
+        }
+
+        this.eggs.forEach((egg) => {
+            c.drawImage(this.eggImage, egg.x, egg.y, this.eggWidth, this.eggHeight);
+        });
+    }
+
+    update() {
+        this.animationCounter += this.animationSpeed;
+
+        if (this.animationCounter >= 1) {
+            this.animationCounter = 0;
+            this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+        }
+
+        if (this.enemySpriteImage) {
+            this.draw();
+
+            this.position.x += this.velocity.x;
+
+            if (this.position.x + this.width > canvas.width || this.position.x < 0) {
+                this.velocity.x *= -1;
+                this.position.y += this.height + 10;
+            }
+
+            if (Math.random() < 0.005) {
+                this.shoot();
+            }
+
+            this.eggs.forEach((egg) => {
+                egg.y += 2;
+                if (egg.y > canvas.height) {
+                    this.eggs.shift();
+                }
+            });
+        }
+    }
+
+    shoot() {
+        const egg = {
+            x: this.position.x + this.width / 2 - this.eggWidth / 2,
+            y: this.position.y + this.height,
+            width: this.eggWidth,
+            height: this.eggHeight
+        };
+
+        this.eggs.push(egg);
+    }
+}
+
+
+
 const player = new Player();
 const keys = {
     left: false,
@@ -107,10 +202,50 @@ const keys = {
     space: false
 };
 
+
+const enemies = [];
+
+function initEnemies() {
+    const enemyWidth = 40;
+    const enemyHeight = 45;
+    const enemiesPerRow = 30; // Количество врагов в ряду
+
+    const paddingX = 10; // Расстояние между врагами по горизонтали
+    const paddingY = 5; // Расстояние между врагами по вертикали
+
+    for (let i = 0; i < enemiesPerRow; i++) {
+        const x = i * (enemyWidth + paddingX);
+        const y = 0; // Враги появляются в верхней части поля
+        enemies.push(new Enemy(x, y));
+    }
+}
+
+initEnemies();
+
+
 function animate() {
     requestAnimationFrame(animate);
     c.clearRect(0, 0, canvas.width, canvas.height);
     player.update();
+
+    enemies.forEach((enemy) => {
+        enemy.update();
+    });
+
+    // Проверка столкновений яиц врагов с игроком
+    enemies.forEach((enemy) => {
+        enemy.eggs.forEach((egg) => {
+            if (
+                egg.x < player.position.x + player.width &&
+                egg.x + egg.width > player.position.x &&
+                egg.y < player.position.y + player.height &&
+                egg.y + egg.height > player.position.y
+            ) {
+                // Столкновение произошло, обработайте его здесь (например, уменьшение жизней игрока)
+                console.log('Игрок подбит!');
+            }
+        });
+    });
 
     if (keys.left) {
         player.velocity.x = -5;
