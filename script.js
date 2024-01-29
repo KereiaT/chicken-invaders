@@ -54,27 +54,27 @@ class Player {
             this.draw();
             this.position.x += this.velocity.x;
             this.position.y += this.velocity.y;
-
+    
             if (this.position.x < 0) {
                 this.position.x = 0;
             }
-
+    
             if (this.position.x + this.width > canvas.width) {
                 this.position.x = canvas.width - this.width;
             }
-
+    
             if (this.position.y < 0) {
                 this.position.y = 0;
             }
-
+    
             if (this.position.y + this.height > canvas.height) {
                 this.position.y = canvas.height - this.height;
             }
-
+    
             if (this.keys.space) {
                 this.shoot();
             }
-
+    
             this.projectiles.forEach((projectile) => {
                 projectile.y -= 5;
                 if (projectile.y < 0) {
@@ -83,16 +83,18 @@ class Player {
             });
         }
     }
+    
 
     shoot() {
-        const projectile = {
-            x: this.position.x + this.width / 2 - this.projectileImage.width / 2,
-            y: this.position.y,
-            width: this.projectileImage.width,
-            height: this.projectileImage.height
-        };
-
-        this.projectiles.push(projectile);
+        if (this.projectileImage.width && this.projectileImage.height) {
+            const projectile = {
+                x: this.position.x + this.width / 2 - this.projectileImage.width / 2,
+                y: this.position.y,
+                width: this.projectileImage.width,
+                height: this.projectileImage.height
+            };
+            this.projectiles.push(projectile);
+        }
     }
 }
 
@@ -148,6 +150,16 @@ class Enemy {
         });
     }
 
+    shoot() {
+        const egg = {
+            x: this.position.x + this.width / 2 - this.eggWidth / 2,
+            y: this.position.y + this.height,
+            width: this.eggWidth,
+            height: this.eggHeight
+        };
+        this.eggs.push(egg);
+    }
+    
     update() {
         this.animationCounter += this.animationSpeed;
 
@@ -160,7 +172,6 @@ class Enemy {
             this.draw();
 
             this.position.x += this.velocity.x;
-
             if (this.position.x + this.width > canvas.width || this.position.x < 0) {
                 this.velocity.x *= -1;
                 this.position.y += this.height + 10;
@@ -172,26 +183,14 @@ class Enemy {
 
             this.eggs.forEach((egg) => {
                 egg.y += 2;
+                // Если яйцо за границей поля, удаляем его
                 if (egg.y > canvas.height) {
                     this.eggs.shift();
                 }
             });
         }
     }
-
-    shoot() {
-        const egg = {
-            x: this.position.x + this.width / 2 - this.eggWidth / 2,
-            y: this.position.y + this.height,
-            width: this.eggWidth,
-            height: this.eggHeight
-        };
-
-        this.eggs.push(egg);
-    }
 }
-
-
 
 const player = new Player();
 const keys = {
@@ -228,25 +227,30 @@ function animate() {
     c.clearRect(0, 0, canvas.width, canvas.height);
     player.update();
 
-    enemies.forEach((enemy) => {
-        enemy.update();
-    });
-
-    // Проверка столкновений яиц врагов с игроком
-    enemies.forEach((enemy) => {
-        enemy.eggs.forEach((egg) => {
-            if (
-                egg.x < player.position.x + player.width &&
-                egg.x + egg.width > player.position.x &&
-                egg.y < player.position.y + player.height &&
-                egg.y + egg.height > player.position.y
-            ) {
-                // Столкновение произошло, обработайте его здесь (например, уменьшение жизней игрока)
-                console.log('Игрок подбит!');
-            }
+    if (enemies) {
+        enemies.forEach((enemy) => {
+            enemy.update();
         });
-    });
-
+        // Проверка столкновений яиц врагов с игроком
+        player.projectiles.forEach((projectile) => {
+            enemies.forEach((enemy) => {
+                if (
+                    enemy &&
+                    projectile &&
+                    projectile.x < enemy.position.x + enemy.width &&
+                    projectile.x + projectile.width > enemy.position.x &&
+                    projectile.y < enemy.position.y + enemy.height &&
+                    projectile.y + projectile.height > enemy.position.y
+                ) {
+                    // Столкновение с врагом, обработайте его здесь (например, увеличение счета)
+                    console.log('Выстрел попал во врага!');
+                    // Удалите врага и выстрел из массивов
+                    enemies.splice(enemies.indexOf(enemy), 1);
+                    player.projectiles.splice(player.projectiles.indexOf(projectile), 1);
+                }
+            });
+        });
+    
     if (keys.left) {
         player.velocity.x = -5;
     } else if (keys.right) {
@@ -263,7 +267,7 @@ function animate() {
         player.velocity.y = 0;
     }
 }
-
+};
 animate();
 
 addEventListener('keydown', (event) => {
@@ -282,7 +286,8 @@ addEventListener('keydown', (event) => {
             break;
         case ' ':
             keys.space = true;
-            player.shoot(); 
+            player.shoot();
+            console.log('Выстрел!');
             break;
     }
 });
