@@ -4,6 +4,12 @@ const c = canvas.getContext('2d');
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+let round = 1;
+let enemiesPerRow = 30;
+let score = 0;
+
+
+
 class Player {
     constructor() {
         this.velocity = {
@@ -202,22 +208,26 @@ const keys = {
 };
 
 
-const enemies = [];
+let enemies = [];
 
 function initEnemies() {
     const enemyWidth = 40;
     const enemyHeight = 45;
-    const enemiesPerRow = 30; // Количество врагов в ряду
 
-    const paddingX = 10; // Расстояние между врагами по горизонтали
-    const paddingY = 5; // Расстояние между врагами по вертикали
+    const paddingX = 10;
+    const paddingY = 5;
+
+    enemies = []; // Очищаем массив врагов
 
     for (let i = 0; i < enemiesPerRow; i++) {
         const x = i * (enemyWidth + paddingX);
-        const y = 0; // Враги появляются в верхней части поля
+        const y = 0;
         enemies.push(new Enemy(x, y));
     }
+    console.log('Enemies initialized:', enemies.length); //для отладки
+    enemiesPerRow *= 2;
 }
+
 
 initEnemies();
 
@@ -225,6 +235,7 @@ initEnemies();
 function animate() {
     requestAnimationFrame(animate);
     c.clearRect(0, 0, canvas.width, canvas.height);
+    updateScore();
     player.update();
 
     if (enemies) {
@@ -232,25 +243,9 @@ function animate() {
             enemy.update();
         });
         // Проверка столкновений яиц врагов с игроком
-        player.projectiles.forEach((projectile) => {
-            enemies.forEach((enemy) => {
-                if (
-                    enemy &&
-                    projectile &&
-                    projectile.x < enemy.position.x + enemy.width &&
-                    projectile.x + projectile.width > enemy.position.x &&
-                    projectile.y < enemy.position.y + enemy.height &&
-                    projectile.y + projectile.height > enemy.position.y
-                ) {
-                    // Столкновение с врагом, обработайте его здесь (например, увеличение счета)
-                    console.log('Выстрел попал во врага!');
-                    // Удалите врага и выстрел из массивов
-                    enemies.splice(enemies.indexOf(enemy), 1);
-                    player.projectiles.splice(player.projectiles.indexOf(projectile), 1);
-                }
-            });
-        });
-    
+        handleCollisions();
+
+
     if (keys.left) {
         player.velocity.x = -5;
     } else if (keys.right) {
@@ -266,9 +261,55 @@ function animate() {
     } else {
         player.velocity.y = 0;
     }
-}
+    }
 };
 animate();
+
+
+function updateScore() {
+    c.fillStyle = 'white';
+    c.font = '20px Arial';
+    c.fillText('ROUND: ' + round, 10, 30);
+    c.fillText('SCORE: ' + score, 10, 60);
+}
+
+function handleCollisions() {
+    for (let i = 0; i < player.projectiles.length; i++) {
+        const projectile = player.projectiles[i];
+
+        for (let j = 0; j < enemies.length; j++) {
+            const enemy = enemies[j];
+
+            if (
+                enemy &&
+                projectile &&
+                projectile.x < enemy.position.x + enemy.width &&
+                projectile.x + projectile.width > enemy.position.x &&
+                projectile.y < enemy.position.y + enemy.height &&
+                projectile.y + projectile.height > enemy.position.y
+            ) {
+                console.log('Выстрел попал во врага!');
+                console.log('Удаляем врага');
+                // Удалите врага и выстрел из массивов
+                enemies.splice(j, 1);
+                player.projectiles.splice(i, 1);
+
+                score += 5;
+                updateScore();
+
+                if (enemies.length === 0) {
+                    // Увеличение номера раунда
+                    round++;
+                    // Инициализация новых врагов для следующего раунда
+                    initEnemies();
+                }
+                // Прерываем внутренний цикл, чтобы избежать ошибки после удаления элементов
+                break;
+            }
+        }
+    }
+}
+
 
 addEventListener('keydown', (event) => {
     switch (event.key) {
